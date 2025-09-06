@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>24×7 Shift Roster – Pro Dashboard (v3.5)</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#111827; --card:#0b1220; --border:#1f2937; --text:#e5e7eb; --muted:#94a3b8; --accent:#38bdf8;
+    --c-M-bg:#1976d2; --c-M-fg:#ffffff; --c-E-bg:#ef6c00; --c-E-fg:#ffffff; --c-N-bg:#7b1fa2; --c-N-fg:#ffffff;
+    --c-O-bg:#2e7d32; --c-O-fg:#ffffff; --c-GS-bg:#00838f; --c-GS-fg:#ffffff; --c-L-bg:#b71c1c; --c-L-fg:#ffffff;
+    --radius:10px;
+  }
+  .theme-light{ --bg:#f7fafc; --panel:#ffffff; --card:#ffffff; --border:#e5e7eb; --text:#0f172a; --muted:#475569; --accent:#0ea5e9; }
+  .theme-hc{ --bg:#000; --panel:#000; --card:#000; --border:#444; --text:#fff; --muted:#cfcfcf; --accent:#00e5ff; }
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI, Roboto, Arial, sans-serif;}
+  .wrap{max-width:1280px;margin:24px auto;padding:0 16px}
+  h1{font-size:24px;margin:0 0 8px;color:var(--text)}
+  .sub{color:var(--muted);margin-bottom:6px}
+  .ver{color:var(--muted);font-size:11px;margin-bottom:16px}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:14px}
+  .toolbar label{font-size:12px;color:var(--muted)}
+  .toolbar select,.toolbar input[type="month"], .toolbar input[type="date"], .toolbar button{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px}
+  .toolbar button{cursor:pointer}
+  .toolbar button.primary{border-color:var(--accent)}
+  .toolbar .group{display:flex;gap:8px;align-items:center}
+  .legend span{display:inline-flex;gap:6px;align-items:center;margin-right:8px;padding:2px 8px;border-radius:6px;border:1px solid var(--border);font-size:12px}
+  .legend .badge{width:14px;height:14px;border-radius:3px;display:inline-block}
+  .grid{overflow:auto;border:1px solid var(--border);border-radius:var(--radius)}
+  table{border-collapse:separate;border-spacing:0;width:100%;min-width:900px}
+  th,td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:center}
+  th{position:sticky;top:0;background:var(--card);z-index:2;font-weight:600;color:var(--text)}
+  tr:hover td{background:rgba(255,255,255,0.02)}
+  td.sel{padding:0}
+  select.shift{width:100%;height:36px;background:transparent;color:inherit;border:0;font-weight:700;text-shadow:10 1px 0 rgba(0,0,0,.25)}
+  select.shift:disabled{opacity:.6;cursor:not-allowed}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border)}
+  .ok{background:rgba(34,197,94,.15);color:#86efac}
+  .bad{background:rgba(239,68,68,.15);color:#fca5a5}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+  .card h3{margin:0 0 8px;font-size:15px;color:var(--text)}
+  .kpi{font-size:28px;font-weight:700;margin-top:4px}
+  .pill{display:inline-block;margin-right:6px;margin-bottom:4px;padding:2px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--muted)}
+  .foot{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .lock{cursor:pointer;font-size:12px;color:var(--muted)}
+  .mini{font-size:11px;color:var(--muted)}
+  #errorBox{display:none;margin:10px 0;padding:10px;border-radius:8px;background:rgba(239,68,68,.15);color:#fecaca;border:1px solid #7f1d1d;font-size:12px}
+
+  /* Modal styling */
+  .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.6);
+      padding-top: 100px;
+  }
+  .modal-content {
+      background: var(--panel);
+      margin: auto;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      position: relative;
+  }
+  .modal-content h3 {
+      margin-top: 0;
+      font-size: 1.2rem;
+  }
+  .modal-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 20px;
+  }
+  .modal-btn {
+      padding: 10px 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 14px;
+  }
+  .modal-btn:hover {
+      border-color: var(--accent);
+  }
+  .close-button {
+      position: absolute;
+      top: 10px;
+      right: 18px;
+      color: var(--muted);
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+  }
+  .close-button:hover {
+      color: var(--text);
+  }
+</style>
+<style>
+  /* Global dropdown styling */
+  select,
+  select option {
+    background-color: #111827;   /* ← change to your preferred bg */
+    color: #F3F4F6;               /* text color on the dropdown and items */
+  }
+
+  /* Focus ring and border to keep it accessible */
+  select {
+    border: 1px solid #374151;
+    border-radius: 6px;
+    padding: 6px 8px;
+  }
+  select:focus {
+    outline: none;
+    border-color: #60A5FA;
+    box-shadow: 0 0 0 3px rgba(96,165,250,0.35);
+  }
+
+  /* Improve item highlight in the open list */
+  option:checked,
+  option:hover {
+    background-color: #1F2937;   /* item hover/selected */
+    color: #FFFFFF;
+  }
+</style>
+
+</head>
+<body class="theme-dark">
+<div class="wrap">
+  <h1>24×7 Shift Roster – Pro Dashboard</h1>
+  <div class="sub">Operated by: <strong>Manish (GS 12:30–22:00 IST)</strong> · Edit shifts with auto‑balancing to maintain 24×7 coverage.</div>
+  <div class="ver">Build: <strong>v3.5</strong> · Local‑time calendar · Locks enforce UI + engine · Cycle seeding + <strong>Phase realignment</strong></div>
+
+  <div id="errorBox"></div>
+
+  <div class="toolbar">
+    <div class="group">
+      <label>Anchor date</label>
+      <input type="date" id="anchorDate" />
+    </div>
+    <div class="group">
+      <label>Anchor resource</label>
+      <select id="anchorRes"></select>
+    </div>
+    <div class="group">
+      <label>Anchor shift</label>
+      <select id="anchorShift">
+        <option value="N">Night (N)</option>
+        <option value="E">Evening (E)</option>
+        <option value="M">Morning (M)</option>
+      </select>
+    </div>
+    <div class="group">
+      <label>View month</label>
+      <input type="month" id="monthSel" />
+    </div>
+    <div class="group">
+      <label>Theme</label>
+      <select id="themeSel">
+        <option value="theme-dark">Dark</option>
+        <option value="theme-light">Light</option>
+        <option value="theme-hc">High Contrast</option>
+      </select>
+    </div>
+    <div class="group">
+      <label><input type="checkbox" id="autoRebal" /> Auto‑rebalance month on edit</label>
+    </div>
+    <div class="group" style="border-left:1px solid var(--border);padding-left:10px;margin-left:4px">
+      <label>Seed from selected date →</label>
+      <select id="seedRes"></select>
+      <select id="seedShift">
+        <option value="N">Night (N)</option>
+        <option value="E">Evening (E)</option>
+        <option value="M">Morning (M)</option>
+      </select>
+      <button id="seedApply" class="primary" title="Set this person to follow 6N-2O-6E-2O-6M-2O from the selected date; re‑align others">Apply</button>
+      <label><input type="checkbox" id="seedOverwrite" checked /> overwrite actuals forward</label>
+    </div>
+    <div class="group">
+      <button class="primary" id="rebalanceMonth">Rebalance month</button>
+      <button id="revertDay">Revert selected day</button>
+      <button id="resetAll">Reset all</button>
+      <button id="unlockAll">Unlock all</button>
+    </div>
+    <div class="legend" style="margin-left:auto">
+      <span><i class="badge" id="lgM"></i>M</span>
+      <span><i class="badge" id="lgE"></i>E</span>
+      <span><i class="badge" id="lgN"></i>N</span>
+      <span><i class="badge" id="lgO"></i>Off</span>
+      <span><i class="badge" id="lgL"></i>Leave</span>
+      <span><i class="badge" id="lgGS"></i>You: GS</span>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Coverage status</h3>
+      <div id="covBadge" class="badge">Checking…</div>
+      <div id="covNotes" class="mini" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3>Allowance (Worked > 5 days/week)</h3>
+      <div id="allowanceKPI" class="kpi">0</div>
+      <div id="allowanceBreakdown" class="mini"></div>
+    </div>
+    <div class="card">
+      <h3>Policy alerts</h3>
+      <div id="alerts" class="mini"></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th style="width:110px">Date</th>
+          <th style="width:70px">Day</th>
+          <th style="width:120px">Manish (GS)</th>
+          <th>Parth <span class="lock" data-name="Parth" title="Lock/unlock for rebalancing">🔓</span></th>
+          <th>Satyam <span class="lock" data-name="Satyam" title="Lock/unlock for rebalancing">🔓</span></th>
+          <th>Chandrachur <span class="lock" data-name="Chandrachur" title="Lock/unlock for rebalancing">🔓</span></th>
+          <th>Gaurav <span class="lock" data-name="Gaurav" title="Lock/unlock for rebalancing">🔓</span></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="foot">
+    <span class="pill">Constraint: exactly one of M/E/N per day</span>
+    <span class="pill">Default: one Off per day (unless Leave present)</span>
+    <span class="pill">Soft: avoid > 6 consecutive same‑shift</span>
+    <span class="pill">Allowance computed when Worked > 5 per ISO week</span>
+  </div>
+</div>
+
+<div id="leave-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h3>Shift Reassignment</h3>
+        <p>A resource is on leave. Who should cover the shift?</p>
+        <div class="modal-buttons">
+            <button id="assign-to-off" class="modal-btn">Assign to Person on OFF</button>
+            <button id="assign-to-manish" class="modal-btn">Assign to Manish</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+  const errorBox = document.getElementById('errorBox');
+  function showError(msg){ errorBox.style.display='block'; errorBox.textContent = msg; console.error(msg); }
+  try{
+    const NAMES = ['Parth','Satyam','Chandrachur','Gaurav'];
+    const CYCLE = ['N','N','N','N','N','N','O','O','E','E','E','E','E','E','O','O','M','M','M','M','M','M','O','O'];
+    const state = { anchorDate:'2025-09-01', anchorResource:'Parth', anchorShift:'N', month:'2025-09', changes:{}, locks:{Parth:false,Satyam:false,Chandrachur:false,Gaurav:false}, theme:'theme-dark', autoRebal:false, palette:{M:'#1976d2',E:'#ef6c00',N:'#7b1fa2',O:'#2e7d32',GS:'#00838f',L:'#b71c1c'}, seeds:{}, manishOverrides: {} };
+    
+    // Default contacts, which will now be used
+    const DEFAULTS = [
+      { id:'manish',      name:'Manish',      phone:'8802914640', email:'pandey.m@hcltech.com' },
+    { id:'satyam',      name:'Satyam',      phone:'9953498875', email:'satyam_s@hcltech.com' },
+    { id:'gaurav',      name:'Gaurav',      phone:'8527665763', email:'nigam_g@hcltech.com' },
+    { id:'chandrachur', name:'Chandrachur', phone:'9350548502', email:'chandrachur.sinha@hcltech.com' },
+    { id:'parth',       name:'Parth',       phone:'9565766667', email:'pandeyp@hcltech.com' }
+    ];
+
+    const fmtDateLocal = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const fmtWeekdayLocal = d => d.toLocaleDateString('en-GB',{weekday:'short'});
+    const parseDate = s => { const [y,m,dd]=(s||'').split('-').map(Number); return new Date(y||1970,(m?m-1:0),dd||1); };
+    function isoWeek(d){ const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const dayNum=(date.getUTCDay()+6)%7; date.setUTCDate(date.getUTCDate()-dayNum+3); const firstThursday=new Date(Date.UTC(date.getUTCFullYear(),0,4)); const week=1+Math.round(((date-firstThursday)/86400000-3+((firstThursday.getUTCDay()+6)%7))/7); return {year:date.getUTCFullYear(),week}; }
+    const cycleRotationFor = s => (s==='N'?0: s==='E'?8:16);
+
+    function computeOffsets(){ const offs={}; offs[state.anchorResource]=0; const others=NAMES.filter(n=>n!==state.anchorResource); const pool=[6,12,18]; for(let i=0;i<others.length;i++) offs[others[i]]=pool[i]; return offs; }
+
+    function resolveSeed(name, dateStr){ const arr = state.seeds[name]||[]; let best=null; for(const s of arr){ if(parseDate(s.start)<=parseDate(dateStr)){ if(!best || parseDate(s.start)>parseDate(best.start)) best=s; } } return best; }
+
+    function plannedShift(dateStr, name){
+      const seed = resolveSeed(name, dateStr);
+      if(seed){ const idx = ((parseDate(dateStr)-parseDate(seed.start))/86400000) + 1; const rot = cycleRotationFor(seed.shift); const cycleIdx = (Math.floor(idx)-1 + rot) % 24; return CYCLE[(cycleIdx+24)%24]; }
+      const idx = ((parseDate(dateStr)-parseDate(state.anchorDate))/86400000) + 1; const rot = cycleRotationFor(state.anchorShift); const off = computeOffsets()[name]; const cycleIdx = (Math.floor(idx)-1 + off + rot) % 24; return CYCLE[(cycleIdx+24)%24];
+    }
+
+    function hexToRgb(hex){ hex=hex.replace('#',''); if(hex.length===3) hex=hex.split('').map(c=>c+c).join(''); const n=parseInt(hex,16); return {r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
+    function luminance({r,g,b}){ const a=[r,g,b].map(v=>{v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055, 2.4)}); return 0.2126*a[0]+0.7152*a[1]+0.0722*a[2]; }
+    function contrastRatio(bgHex, fgHex){ const L1=luminance(hexToRgb(bgHex)), L2=luminance(hexToRgb(fgHex)); const [hi,lo]=L1>L2?[L1,L2]:[L2,L1]; return (hi+0.05)/(lo+0.05); }
+    const idealText = bgHex => contrastRatio(bgHex,'#000') >= contrastRatio(bgHex,'#fff') ? '#000' : '#fff';
+
+    const tblBody = document.querySelector('#tbl tbody');
+    const monthSel = document.getElementById('monthSel');
+    const anchorDateEl = document.getElementById('anchorDate');
+    const anchorResEl = document.getElementById('anchorRes');
+    const anchorShiftEl = document.getElementById('anchorShift');
+    const themeSel = document.getElementById('themeSel');
+    const autoRebalEl = document.getElementById('autoRebal');
+    const covBadge = document.getElementById('covBadge');
+    const covNotes = document.getElementById('covNotes');
+    const allowanceKPI = document.getElementById('allowanceKPI');
+    const allowanceBreakdown = document.getElementById('allowanceBreakdown');
+    const alerts = document.getElementById('alerts');
+    const unlockAllBtn = document.getElementById('unlockAll');
+
+    const seedRes = document.getElementById('seedRes');
+    const seedShift = document.getElementById('seedShift');
+    const seedApply = document.getElementById('seedApply');
+    const seedOverwrite = document.getElementById('seedOverwrite');
+
+    // New modal elements
+    const leaveModal = document.getElementById('leave-modal');
+    const closeBtn = document.querySelector('#leave-modal .close-button');
+    const assignToOffBtn = document.getElementById('assign-to-off');
+    const assignToManishBtn = document.getElementById('assign-to-manish');
+    let leaveDetails = {date: null, name: null, prevShift: null};
+    
+    // NEW: Email modal elements
+    const emailModal = document.createElement('div');
+    emailModal.id = 'email-modal';
+    emailModal.className = 'modal';
+    emailModal.innerHTML = `
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>Email Notification</h3>
+            <p>An email draft has been created. Click the button to open it in your email client.</p>
+            <div class="modal-buttons">
+                <button id="open-email-btn" class="modal-btn">Open Email Client</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(emailModal);
+    const openEmailBtn = document.getElementById('open-email-btn');
+
+    let currentRows=null, selectedDate=null;
+    
+    // UPDATED: Function to trigger email notification
+    function triggerEmailNotification(date, onLeave, coveringPerson, coveringShift) {
+    const contacts = DEFAULTS;
+    // Get manager emails from the managers section
+    const managerEmails = [
+        'shreekanta.barik@hcltech.com',
+        'sarathkumar.garik@hcltech.com'
+    ];
+    // All team members including the person on leave
+    const teamEmails = contacts.map(c => c.email);
+    
+    const subject = `Shift Cover Notification: ${date}`;
+    let body = `Hello Team,
+
+This email is to notify you of a shift change.
+
+- Person on Leave: ${onLeave}
+- Covered by: ${coveringPerson}
+- Shift covered: ${coveringShift}
+- Date: ${date}`;
+
+    // Construct the mailto link with managers in CC and the full team in TO
+    const mailtoLink = `mailto:${teamEmails.join(',') }?cc=${managerEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    openEmailBtn.onclick = () => {
+        window.location.href = mailtoLink;
+        emailModal.style.display = 'none';
+    };
+    emailModal.style.display = 'block';
+}
+
+
+    function applyPalette(){ const root=document.documentElement; const p=state.palette; ['M','E','N','O','GS','L'].forEach(k=>{ const bg=p[k]; const fg=idealText(bg); root.style.setProperty(`--c-${k}-bg`, bg); root.style.setProperty(`--c-${k}-fg`, fg); const lg=document.getElementById('lg'+k); if(lg){ lg.style.background=bg; lg.style.border='1px solid rgba(0,0,0,.2)'; } }); }
+    function setTheme(cls){ document.body.classList.remove('theme-dark','theme-light','theme-hc'); document.body.classList.add(cls); state.theme=cls; }
+
+    function buildBaseline(month){ if(!month||!/\d{4}-\d{2}/.test(month)){ const d=new Date(); month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); state.month=month; monthSel.value=month; } const [y,m]=month.split('-').map(Number); const start=new Date(y,m-1,1), end=new Date(y,m,0); const rows=[]; for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ const date=fmtDateLocal(d), day=fmtWeekdayLocal(d); const row={date, day, GS:'GS', coverageOK:true, planned:{}, actual:{}}; NAMES.forEach(n=>{ row.planned[n]=plannedShift(date,n); row.actual[n]=row.planned[n]; }); rows.push(row);} return rows; }
+    function applyChanges(rows){ for(const r of rows){ const ch=state.changes[r.date]; if(!ch) continue; for(const n of Object.keys(ch)) r.actual[n]=ch[n]; rebalanceDay(rows, r.date); } }
+
+    const dayTarget = r => (NAMES.some(n=>r.actual[n]==='L') ? ['M','E','N'] : ['M','E','N','O']);
+    const needsMismatch = (target, ass) => { const a=Object.values(ass).slice(); for(const s of target){ const i=a.indexOf(s); if(i>=0) a.splice(i,1); else return true; } return false; };
+    const permJS = arr => { if(arr.length<=1) return [arr]; const out=[]; for(let i=0;i<arr.length;i++){ const rest=[...arr.slice(0,i),...arr.slice(i+1)]; permJS(rest).forEach(p=>out.push([arr[i],...p])); } return out; };
+    function countWorkedWeek(rows, year, week, name, hypot){ let cnt=0; for(const r of rows){ const w=isoWeek(parseDate(r.date)); if(w.year!==year||w.week!==week) continue; const val=(hypot&&hypot[r.date]&&hypot[r.date][name])||r.actual[name]; if(['M','E','N'].includes(val)) cnt++; } return cnt; }
+    function countStreak(rows, date, name, shift){ if(!['M','E','N'].includes(shift)) return 0; const idx=rows.findIndex(x=>x.date===date); let c=1; for(let i=idx-1;i>=0&&i>=idx-10;i--){ const s=rows[i].actual[name]; if(s===shift) c++; else break; } return c; }
+
+    function computePenalty(rows, date, assign){ const r=rows.find(x=>x.date===date); let p=0; const wk=isoWeek(parseDate(date)); for(const n of NAMES){ const s=assign[n]; const plan=r.planned[n]; if(s!==plan) p+=1; const streak=countStreak(rows,date,n,s); if(['M','E','N'].includes(s)&&streak>6) p+=5; const worked=countWorkedWeek(rows,wk.year,wk.week,n,{[date]:assign}); if(worked>5) p+=0.5*(worked-5); } return p; }
+
+    function rebalanceDay(rows, date){ const r=rows.find(x=>x.date===date), target=dayTarget(r); const fixed={}; const ch=state.changes[date]||{}; for(const n of Object.keys(ch)) fixed[n]=ch[n]; NAMES.forEach(n=>{ if(state.locks[n] && !ch[n]) fixed[n]=r.actual[n]; }); let needed=target.slice(); for(const n of Object.keys(fixed)){ const i=needed.indexOf(fixed[n]); if(i>=0) needed.splice(i,1); } const base={}; NAMES.forEach(n=>base[n]=r.actual[n]); for(const n of Object.keys(fixed)) base[n]=fixed[n]; let best=null, bestP=Infinity; const remaining=NAMES.filter(n=>fixed[n]==null); if(remaining.length===0){ if(needsMismatch(target, base)){ const missing=target.filter(s=>!Object.values(base).includes(s)); const extras=NAMES.filter(n=>!fixed[n]); for(let i=0;i<missing.length&&i<extras.length;i++) base[extras[i]]=missing[i]; } best=base; bestP=computePenalty(rows,date,base);} else { for(const p of permJS(needed)){ const cand={...base}; for(let i=0;i<remaining.length;i++) cand[remaining[i]]=p[i]; const P=computePenalty(rows,date,cand); if(P<bestP){ best=cand; bestP=P; } } } if(best){ if(!state.changes[date]) state.changes[date]={}; for(const n of NAMES){ rows.find(x=>x.date===date).actual[n]=best[n]; if(ch[n] || state.locks[n]) state.changes[date][n]=best[n]; } } }
+
+    const rebalanceMonth = rows => rows.forEach(r=>rebalanceDay(rows, r.date));
+
+    // -------- Phase realignment after seeding pivot --------
+    function alignPhasesFrom(startDate, pivotName){
+      // Determine pivot shift on startDate as per current seeds
+      const pivotShift = plannedShift(startDate, pivotName);
+      const needed = ['M','E','N','O'].filter(s=>s!==pivotShift);
+      const others = NAMES.filter(n=>n!==pivotName);
+      // try all permutations of assigning remaining shifts to others for startDate
+      let best=null, bestCost=Infinity;
+      const perms = permJS(needed);
+      for(const p of perms){
+        const assign={}; assign[pivotName]=pivotShift;
+        for(let i=0;i<others.length;i++){ assign[others[i]]=p[i]; }
+        // cost = deviation from their planned shift on the startDate (before realignment)
+        let cost=0;
+        for(const n of others){ const orig=plannedShift(startDate,n); if(assign[n]!==orig) cost+=1; }
+        if(cost<bestCost){ best=assign; bestCost=cost; }
+      }
+      // Write seeds for all people at startDate with chosen assignment
+      for(const n of NAMES){ if(!state.seeds[n]) state.seeds[n]=[]; state.seeds[n].push({start:startDate, shift: best[n]}); }
+    }
+
+    function setCellShift(td, shift){ const bg=getComputedStyle(document.documentElement).getPropertyValue(`--c-${shift}-bg`).trim(); const fg=getComputedStyle(document.documentElement).getPropertyValue(`--c-${shift}-fg`).trim(); td.style.background=bg; td.style.color=fg; const sel=td.querySelector('select.shift'); if(sel){ sel.style.color=fg; sel.style.fontWeight='700'; sel.style.textShadow='0 1px 0 rgba(0,0,0,.25)'; } }
+
+    function render(rows){ rows = rows || buildBaseline(state.month); applyChanges(rows); currentRows=rows; tblBody.innerHTML=''; for(const r of rows){ const tr=document.createElement('tr'); tr.setAttribute('data-date', r.date); const tdDate=document.createElement('td'); tdDate.textContent=r.date; tdDate.style.cursor='pointer'; tdDate.onclick=()=>{ selectedDate=r.date; highlightSelected(); }; const tdDay=document.createElement('td'); tdDay.textContent=r.day; const tdGS=document.createElement('td'); tdGS.textContent='GS';
+      
+      // NEW: Check for Manish override
+      const manishOverrideShift = state.manishOverrides[r.date];
+      if (manishOverrideShift) {
+          tdGS.textContent = manishOverrideShift;
+          setCellShift(tdGS, manishOverrideShift);
+      } else {
+          tdGS.style.background='var(--c-GS-bg)';
+          tdGS.style.color='var(--c-GS-fg)';
+          tdGS.style.fontWeight='700';
+      }
+
+      tr.append(tdDate, tdDay, tdGS); for(const name of NAMES){ const td=document.createElement('td'); td.className='sel'; const sel=document.createElement('select'); sel.className='shift'; ['M','E','N','O','L'].forEach(opt=>{ const o=document.createElement('option'); o.value=opt; o.textContent=opt; sel.appendChild(o); }); sel.value=r.actual[name]; if(state.locks[name]){ sel.disabled=true; sel.title = name+' is locked'; } td.appendChild(sel); setCellShift(td, sel.value);
+      
+      sel.onchange = (e) => {
+        if (sel.disabled) return;
+        const newShift = e.target.value;
+        if (newShift === 'L') {
+          leaveDetails = { date: r.date, name: name, prevShift: r.actual[name] };
+          leaveModal.style.display = 'block';
+          sel.value = leaveDetails.prevShift;
+          setCellShift(td, leaveDetails.prevShift);
+        } else {
+          if (!state.changes[r.date]) state.changes[r.date] = {};
+          // NEW: If there was a manish override for this day, clear it.
+          if (state.manishOverrides[r.date]) {
+              delete state.manishOverrides[r.date];
+          }
+          state.changes[r.date][name] = newShift;
+          r.actual[name] = newShift;
+          setCellShift(td, newShift);
+          rebalanceDay(currentRows, r.date);
+          if (autoRebalEl.checked) {
+              rebalanceMonth(currentRows);
+          }
+          render(currentRows);
+        }
+      };
+      tr.appendChild(td); } tblBody.appendChild(tr); } updateCoverage(rows); highlightSelected(); save(); refreshLockIcons(); }
+
+    const highlightSelected = () => Array.from(tblBody.querySelectorAll('tr')).forEach(tr=>{ const d=tr.firstChild.textContent; tr.style.outline=(selectedDate && d===selectedDate)?'2px solid var(--accent)':'none'; });
+
+    function updateCoverage(rows){ let allOk=true, bad=0; const dates=[]; for(const r of rows){ const acts=NAMES.map(n=>r.actual[n]);
+      // NEW: Add Manish's override to the list of shifts for the day
+      if (state.manishOverrides[r.date] && ['M','E','N'].includes(state.manishOverrides[r.date])) {
+          acts.push(state.manishOverrides[r.date]);
+      }
+      const hasL=acts.includes('L');
+      const target=hasL?['M','E','N']:['M','E','N','O'];
+      // The old logic for checking ok status had an issue. This new one is more robust.
+      const shiftCounts = acts.reduce((acc, shift) => {
+          if (['M','E','N','O'].includes(shift)) { acc[shift] = (acc[shift] || 0) + 1; }
+          return acc;
+      }, {});
+      const ok = (shiftCounts['M'] === 1 && shiftCounts['E'] === 1 && shiftCounts['N'] === 1)
+                  && (hasL || shiftCounts['O'] === 1);
+
+      r.coverageOK=ok;
+      if(!ok){ allOk=false; bad++; dates.push(r.date);}
+    } covBadge.className='badge '+(allOk?'ok':'bad'); covBadge.textContent=allOk?'Coverage OK for all days in view':`Coverage issues: ${bad} day(s)`; covNotes.textContent=allOk?'':`Dates affected: ${dates.slice(0,8).join(', ')}${dates.length>8?'…':''}`; computeAllowances(rows); computeAlerts(rows); }
+
+    function computeAllowances(rows){ const weekly={}, lines=[]; let total=0; for(const r of rows){ const wk=isoWeek(parseDate(r.date)); for(const n of NAMES){ const key=`${n}|${wk.year}|${wk.week}`; if(!weekly[key]) weekly[key]={Name:n,year:wk.year,week:wk.week,worked:0}; if(['M','E','N'].includes(r.actual[n])) weekly[key].worked++; } } Object.values(weekly).forEach(w=>{ const allow=Math.max(0,w.worked-5); total+=allow; lines.push(`${w.Name} · W${w.week} ${w.year}: ${w.worked} → Allow ${allow}`); }); allowanceKPI.textContent=total; allowanceBreakdown.innerHTML='<div class="mini">'+lines.join('<br>')+'</div>'; }
+
+    function computeAlerts(rows){ const msgs=[]; for(const n of NAMES){ let streak=0, prev=null; for(const r of rows){ const s=r.actual[n]; if(['M','E','N'].includes(s)){ if(s===prev) streak++; else { prev=s; streak=1; } if(streak>6){ msgs.push(`${n} exceeds 6 consecutive ${s} shifts starting ${r.date}`); break; } } else { prev=null; streak=0; } } } alerts.innerHTML=msgs.length?('<ul style="margin:0;padding-left:18px">'+msgs.map(m=>`<li>${m}</li>`).join('')+'</ul>'):'<span class="mini">No alerts</span>'; }
+
+    function refreshLockIcons(){ document.querySelectorAll('.lock').forEach(el=>{ const n=el.dataset.name; el.textContent = state.locks[n] ? '\uD83D\uDD12' : '\uD83D\uDD13'; el.title = state.locks[n] ? `${n} is locked (UI disabled & rebalancing will not move them)` : `${n} is unlocked (rebalancing may move them)`; }); }
+    function wireLocks(){ document.querySelectorAll('.lock').forEach(el=>{ el.addEventListener('click', ()=>{ const n=el.dataset.name; state.locks[n] = !state.locks[n]; refreshLockIcons(); render(currentRows); save(); }); }); }
+
+    function applyStateToControls(){ const d=new Date(); if(!state.anchorDate) state.anchorDate = fmtDateLocal(d); anchorDateEl.value=state.anchorDate; anchorResEl.innerHTML=''; seedRes.innerHTML=''; NAMES.forEach(n=>{ for(const sel of [anchorResEl, seedRes]){ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); } }); anchorResEl.value=state.anchorResource; anchorShiftEl.value=state.anchorShift; if(!state.month){ state.month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); } monthSel.value=state.month; themeSel.value=state.theme; setTheme(state.theme); autoRebalEl.checked=state.autoRebal; }
+
+    function save(){ localStorage.setItem('roster_v3_5', JSON.stringify(state)); }
+    function restore(){ const s=localStorage.getItem('roster_v3_5'); if(s){ try{ Object.assign(state, JSON.parse(s)); }catch(e){ console.warn('Restore failed', e); } } }
+
+    restore(); applyPalette(); applyStateToControls(); wireLocks();
+
+    anchorDateEl.addEventListener('change', ()=>{ state.anchorDate=anchorDateEl.value; render(); });
+    anchorResEl.addEventListener('change', ()=>{ state.anchorResource=anchorResEl.value; const rows=buildBaseline(state.month); applyChanges(rows); rebalanceMonth(rows); render(rows); });
+    anchorShiftEl.addEventListener('change', ()=>{ state.anchorShift=anchorShiftEl.value; const rows=buildBaseline(state.month); applyChanges(rows); rebalanceMonth(rows); render(rows); });
+    monthSel.addEventListener('change', ()=>{ state.month=monthSel.value; render(); });
+    themeSel.addEventListener('change', ()=>{ setTheme(themeSel.value); save(); });
+    autoRebalEl.addEventListener('change', ()=>{ state.autoRebal=autoRebalEl.checked; save(); });
+    document.getElementById('rebalanceMonth').onclick=()=>{ const rows=buildBaseline(state.month); applyChanges(rows); rebalanceMonth(rows); render(rows); };
+    document.getElementById('revertDay').onclick=()=>{ if(!selectedDate){ alert('Click a Date cell to select a day first.'); return;} delete state.changes[selectedDate]; delete state.manishOverrides[selectedDate]; render(); };
+    document.getElementById('resetAll').onclick=()=>{ state.changes={}; state.seeds={}; state.manishOverrides={}; render(); };
+    document.getElementById('unlockAll').onclick=()=>{ Object.keys(state.locks).forEach(k=>state.locks[k]=false); refreshLockIcons(); render(currentRows); save(); };
+
+    seedApply.onclick=()=>{
+      if(!selectedDate){ alert('Click a Date cell to select a start date'); return; }
+      const pivot = seedRes.value; const sh = seedShift.value; const start = selectedDate;
+      if(!state.seeds[pivot]) state.seeds[pivot]=[];
+      state.seeds[pivot].push({start, shift: sh});
+      alignPhasesFrom(start, pivot);
+      if(seedOverwrite.checked && currentRows){
+        for(const r of currentRows){ if(parseDate(r.date) >= parseDate(start)){
+          for(const n of NAMES){ r.planned[n] = plannedShift(r.date, n); r.actual[n] = r.planned[n]; if(!state.changes[r.date]) state.changes[r.date]={}; state.changes[r.date][n]=r.actual[n]; }
+        } }
+      }
+      if(currentRows){ rebalanceMonth(currentRows); }
+      render(currentRows); save();
+    };
+    
+    // NEW LOGIC FOR MODAL
+    assignToOffBtn.onclick = () => {
+        const { date, name, prevShift } = leaveDetails;
+        if (!state.changes[date]) state.changes[date] = {};
+        
+        state.changes[date][name] = 'L';
+        const row = currentRows.find(r => r.date === date);
+        row.actual[name] = 'L';
+        
+        const offResource = NAMES.find(n => n !== name && row.actual[n] === 'O');
+        if (offResource) {
+            state.changes[date][offResource] = prevShift;
+            row.actual[offResource] = prevShift;
+            triggerEmailNotification(date, name, offResource, prevShift);
+        }
+
+        rebalanceDay(currentRows, date);
+        if (autoRebalEl.checked) {
+            rebalanceMonth(currentRows);
+        }
+        leaveModal.style.display = 'none';
+        render(currentRows);
+    };
+
+    assignToManishBtn.onclick = () => {
+        const { date, name, prevShift } = leaveDetails;
+        if (!state.changes[date]) state.changes[date] = {};
+        
+        state.changes[date][name] = 'L';
+        const row = currentRows.find(r => r.date === date);
+        row.actual[name] = 'L';
+        
+        // Manually handle Manish's shift
+        state.manishOverrides[date] = prevShift;
+        triggerEmailNotification(date, name, "Manish", prevShift);
+
+
+        // Clear any auto-rebalancing changes for this day
+        delete state.changes[date];
+
+        leaveModal.style.display = 'none';
+        render(currentRows);
+    };
+
+    closeBtn.onclick = () => {
+        leaveModal.style.display = 'none';
+    };
+
+    window.onclick = (event) => {
+        if (event.target === leaveModal) {
+            leaveModal.style.display = 'none';
+        } else if (event.target === emailModal) {
+            emailModal.style.display = 'none';
+        }
+    };
+    // END OF NEW LOGIC
+
+    render();
+  } catch(e){ showError('Init failed: '+e.message); }
+})();
+</script>
+<style>
+/* New styles for the two-column layout */
+.contact-sections {
+  display: flex;
+  gap: 14px;
+  margin-top: 14px;
+}
+.contact-sections .tc-card {
+  flex: 1;
+}
+
+/* New styles for the managers section */
+.managers-card {
+  background: var(--tc-card-bg);
+  color: var(--tc-card-fg);
+  border: 1px solid var(--tc-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.managers-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.managers-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+}
+.managers-list li {
+  margin-bottom: 8px;
+}
+.manager-name {
+  font-weight: 600;
+  cursor: help;
+  position: relative;
+}
+.manager-info {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  white-space: nowrap;
+  background: var(--tc-card-bg);
+  color: var(--tc-card-fg);
+  border: 1px solid var(--tc-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+.manager-name:hover .manager-info {
+  display: block;
+}
+.manager-info p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+</style>
+
+<div class="contact-sections">
+  <section id="team-contacts-card" class="tc-card">
+    <div class="tc-card-head">
+      <h3>EDI Team Contact List</h3>
+      <div class="tc-card-actions">
+        <button id="tc-manage" class="btn btn-primary" type="button" title="Add or edit contact details">Manage</button>
+        <button id="tc-reset" class="btn btn-secondary" type="button" title="Reset to default contacts">Reset</button>
+      </div>
+    </div>
+
+    <table class="tc-table" role="grid" aria-label="Team contact information">
+      <thead>
+        <tr><th>Name</th><th>Phone</th><th>Email</th></tr>
+      </thead>
+      <tbody id="contactsTableBody"></tbody>
+    </table>
+  </section>
+
+  <section id="managers-card" class="managers-card">
+    <h3>Managers</h3>
+    <ul class="managers-list">
+      <li>
+        <span class="manager-name">Shreekanta Barik
+          <div class="manager-info">
+            <p><strong>Phone:</strong> 9717795302</p>
+            <p><strong>Email:</strong> shreekanta.barik@hcltech.com</p>
+          </div>
+        </span>
+      </li>
+      <li>
+        <span class="manager-name">Sarath Kumar Garikipati
+          <div class="manager-info">
+            <p><strong>Phone:</strong> 9945233289</p>
+            <p><strong>Email:</strong> sarathkumar.garik@hcltech.com</p>
+          </div>
+        </span>
+      </li>
+    </ul>
+  </section>
+</div>
+
+<button id="contactsFab" class="contacts-fab" type="button" title="EDI Team Contacts">Contacts</button>
+
+<div id="contactsModal" class="tc-modal" hidden>
+  <div class="tc-panel" role="dialog" aria-modal="true" aria-labelledby="contactsTitle">
+    <header class="tc-panel-head">
+      <h3 id="contactsTitle">Manage EDI Team Contacts</h3>
+    </header>
+
+    <form id="contactsForm">
+      <div class="tc-panel-body">
+        <p class="tc-hint">Click into any field to update. Changes are saved to this browser only.</p>
+        <div id="contactsFormRows" class="tc-rows"></div>
+      </div>
+      <footer class="tc-panel-foot">
+        <button id="contactsCancel" class="btn btn-secondary" type="button">Close</button>
+        <button id="contactsSave" class="btn btn-primary" type="submit">Save</button>
+        <button id="contactsReset" class="btn btn-danger" type="button" title="Restore default numbers/emails">Reset</button>
+      </footer>
+    </form>
+  </div>
+</div>
+
+<style>
+  /* ---- Theme-aware tokens (inherits your dark/light) ---- */
+  :root{
+    --tc-border:#e5e7eb; --tc-card-bg:#ffffff; --tc-card-fg:#111827;
+    --tc-input-bg:#ffffff; --tc-input-border:#cbd5e1;
+    --tc-overlay:rgba(0,0,0,.45); --tc-primary:#2563eb; --tc-danger:#dc2626;
+    --tc-fab-text:#ffffff;
+  }
+  [data-theme="dark"]{
+    --tc-border:#374151; --tc-card-bg:#1f2937; --tc-card-fg:#f1f5f9;
+    --tc-input-bg:#111827; --tc-input-border:#374151;
+    --tc-overlay:rgba(0,0,0,.6); --tc-primary:#3b82f6; --tc-danger:#ef4444;
+  }
+
+  /* Card on the dashboard */
+  .tc-card{ background:var(--tc-card-bg); color:var(--tc-card-fg);
+            border:1px solid var(--tc-border); border-radius:10px;
+            padding:12px 14px; margin-top:14px; }
+  .tc-card-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .tc-card-actions{ display:flex; gap:8px; }
+
+  .tc-table{ width:100%; border-collapse:collapse; margin-top:10px; }
+  .tc-table th,.tc-table td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--tc-border); }
+  .tc-table a{ color:inherit; text-decoration:none; }
+  .mono{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* Buttons */
+  .btn{ display:inline-flex; align-items:center; gap:6px; border-radius:6px;
+        padding:8px 12px; cursor:pointer; border:1px solid transparent; }
+  .btn-primary{ background:var(--tc-primary); color:#fff; }
+  .btn-secondary{ background:transparent; color:inherit; border-color:var(--tc-border); }
+  .btn-danger{ background:var(--tc-danger); color:#fff; }
+
+  /* Floating Action Button */
+  .contacts-fab{
+    position:fixed; right:18px; bottom:18px; z-index:10000; border:0;
+    background:var(--tc-primary); color:var(--tc-fab-text);
+    padding:10px 14px; border-radius:9999px; font-weight:600; cursor:pointer;
+    box-shadow:0 8px 22px rgba(0,0,0,.25);
+  }
+
+  /* Modal shell */
+  .tc-modal{ position:fixed; inset:0; display:grid; place-items:center;
+             background:var(--tc-overlay); z-index:10001; }
+  .tc-panel{ width:min(880px,94vw); background:var(--tc-card-bg); color:var(--tc-card-fg);
+             border:1px solid var(--tc-border); border-radius:12px; box-shadow:0 12px 36px rgba(0,0,0,.35); }
+  .tc-panel-head,.tc-panel-foot{ padding:12px 16px; border-bottom:1px solid var(--tc-border); }
+  .tc-panel-foot{ border-bottom:none; border-top:1px solid var(--tc-border);
+                  display:flex; gap:8px; justify-content:flex-end; }
+  .tc-panel-body{ padding:12px 16px; max-height:60vh; overflow:auto; }
+  .tc-hint{ opacity:.8; margin:0 0 10px; font-size:.9rem; }
+
+  /* Edit rows */
+  .tc-rows{ display:grid; gap:10px; }
+  .tc-row{ display:grid; grid-template-columns: 160px 1fr 1fr; gap:12px; align-items:center; }
+  .tc-name{ font-weight:600; }
+  .tc-field{ display:flex; flex-direction:column; gap:6px; }
+  .tc-field label{ font-size:.85rem; opacity:.85; }
+  .tc-field input{
+    background:var(--tc-input-bg); color:inherit; border:1px solid var(--tc-input-border);
+    border-radius:6px; padding:8px 10px;
+  }
+
+  /* Tiny toast for feedback */
+  #tc-toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+             background:var(--tc-card-bg); color:var(--tc-card-fg); border:1px solid var(--tc-border);
+             border-radius:8px; padding:8px 12px; box-shadow:0 8px 22px rgba(0,0,0,.25); z-index:10002; }
+
+  /* High-Contrast */
+  @media (forced-colors: active){
+    .contacts-fab,.tc-panel,.btn,.tc-field input,.tc-card{ forced-color-adjust:none; }
+  }
+</style>
+
+<script>
+(function () {
+  // ---- Defaults you provided ----
+  const DEFAULTS = [
+    { id:'manish',      name:'Manish',      phone:'8802914640', email:'pandey.m@hcltech.com' },
+    { id:'satyam',      name:'Satyam',      phone:'9953498875', email:'satyam_s@hcltech.com' },
+    { id:'gaurav',      name:'Gaurav',      phone:'8527665763', email:'nigam_g@hcltech.com' },
+    { id:'chandrachur', name:'Chandrachur', phone:'9350548502', email:'chandrachur.sinha@hcltech.com' },
+    { id:'parth',       name:'Parth',       phone:'9565766667', email:'pandeyp@hcltech.com' }
+  ];
+  const KEY = 'teamContacts_v1';
+  const $ = (s, r=document)=>r.querySelector(s);
+
+  // localStorage with fallback (in case file:// or policy blocks writes)
+  function getStore(){
+    try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return localStorage; }
+    catch(_){ return { _mem:null, getItem(){return this._mem;}, setItem(k,v){this._mem=v;}, removeItem(){this._mem=null;} }; }
+  }
+  const store = getStore();
+
+  function loadContacts(){
+    try{
+      const raw = store.getItem(KEY);
+      if(!raw) return DEFAULTS.slice();
+      const arr = JSON.parse(raw);
+      const byId = Object.fromEntries(arr.map(x=>[x.id,x]));
+      return DEFAULTS.map(d=>({ ...d, ...(byId[d.id]||{}) }));
+    }catch{ return DEFAULTS.slice(); }
+  }
+  function saveContacts(list){ store.setItem(KEY, JSON.stringify(list)); }
+
+  function renderCard(){
+    const data = loadContacts();
+    const tbody = $('#contactsTableBody');
+    if(!tbody) return;
+    tbody.innerHTML = data.map(c => `
+      <tr>
+        <td>${c.name}</td>
+        <td><a class="mono" href="tel:${c.phone}">${c.phone}</a></td>
+        <td><a href="mailto:${c.email}">${c.email}</a></td>
+      </tr>
+    `).join('');
+  }
+
+  function openModal(){
+    const data = loadContacts();
+    const host = $('#contactsFormRows');
+    host.innerHTML = data.map(c => `
+      <div class="tc-row" data-id="${c.id}">
+        <div class="tc-name">${c.name}</div>
+        <div class="tc-field">
+          <label for="phone_${c.id}">Phone</label>
+          <input id="phone_${c.id}" inputmode="tel" pattern="[0-9+\\-() ]{3,}" value="${c.phone}">
+        </div>
+        <div class="tc-field">
+          <label for="email_${c.id}">Email</label>
+          <input id="email_${c.id}" type="text" value="${c.email}">
+        </div>
+      </div>
+    `).join('');
+    $('#contactsModal').hidden = false;
+  }
+  function closeModal(){ $('#contactsModal').hidden = true; }
+
+  function toast(msg){
+    const el = document.createElement('div');
+    el.id='tc-toast'; el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(()=>{ el.remove(); }, 2000);
+  }
+
+  // Relaxed email check: allow internal formats like "user@hcl"
+  function looksWeirdEmail(s){ return !!s && !/.+@.+/.test(s); }
+
+  function onSave(e){
+    e.preventDefault();
+    const current = loadContacts();
+    const updated = current.map(c=>{
+      const phone = ($('#phone_'+c.id)?.value||'').trim();
+      const email = ($('#email_'+c.id)?.value||'').trim();
+      return { ...c, phone, email };
+    });
+
+    const odd = updated.find(c => looksWeirdEmail(c.email));
+    if (odd){
+      const ok = confirm(`Email "${odd.email}" for ${odd.name} looks unusual. Save anyway?`);
+      if (!ok) return;
+    }
+
+    saveContacts(updated);
+    renderCard();
+    closeModal();
+    toast('Contacts saved');
+  }
+
+  function onReset(){
+    if (confirm('Reset contact info to default values?')){
+      saveContacts(DEFAULTS);
+      renderCard();
+      // If modal is open, refresh its fields
+      if (!$('#contactsModal').hidden) openModal();
+      toast('Contacts reset');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    renderCard();
+    // Buttons on the card
+    $('#tc-manage')?.addEventListener('click', openModal);
+    $('#tc-reset')?.addEventListener('click', onReset);
+    // Floating button
+    $('#contactsFab')?.addEventListener('click', openModal);
+    // Modal actions
+    $('#contactsCancel')?.addEventListener('click', closeModal);
+    $('#contactsForm')?.addEventListener('submit', onSave);
+    $('#contactsReset')?.addEventListener('click', onReset);
+    // Click outside panel closes modal
+    $('#contactsModal')?.addEventListener('click', (e)=>{ if(e.target.id==='contactsModal') closeModal(); });
+  });
+})();
+</script>
+<style>
+  /* Force the modal to truly hide when [hidden] is set, even if other CSS fights it */
+  .tc-modal[hidden]{ display:none !important; }
+</style>
+
+<script>
+/* Team Contacts — resilient hotfix */
+(function(){
+  const KEY = 'teamContacts_v1';
+  const DEFAULTS = [
+    { id:'manish',      name:'Manish',      phone:'8802914640', email:'pandey.m@hcltech.com' },
+    { id:'satyam',      name:'Satyam',      phone:'9953498875', email:'satyam_s@hcltech.com' },
+    { id:'gaurav',      name:'Gaurav',      phone:'8527665763', email:'nigam_g@hcltech.com' },
+    { id:'chandrachur', name:'Chandrachur', phone:'9350548502', email:'chandrachur.sinha@hcltech.com' },
+    { id:'parth',       name:'Parth',       phone:'9565766667', email:'pandeyp@hcltech.com' }
+  ];
+
+  // Storage with fallback (file:// or policy can block localStorage)
+  function getStore(){
+    try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return localStorage; }
+    catch(_){ return { _s:null, getItem(){return this._s;}, setItem(k,v){this._s=v;}, removeItem(){this._s=null;} }; }
+  }
+  const store = getStore();
+
+  function loadContacts(){
+    try{
+      const raw = store.getItem(KEY);
+      if(!raw) return DEFAULTS.slice();
+      const arr = JSON.parse(raw);
+      const byId = Object.fromEntries(arr.map(x=>[x.id,x]));
+      return DEFAULTS.map(d => ({ ...d, ...(byId[d.id]||{}) }));
+    }catch{ return DEFAULTS.slice(); }
+  }
+  function saveContacts(list){ store.setItem(KEY, JSON.stringify(list)); }
+
+  function renderCard(){
+    const data = loadContacts();
+    document.querySelectorAll('#contactsTableBody').forEach(tbody=>{
+      tbody.innerHTML = data.map(c=>`
+        <tr>
+          <td>${c.name}</td>
+          <td><a class="mono" href="tel:${c.phone}">${c.phone}</a></td>
+          <td><a href="mailto:${c.email}">${c.email}</a></td>
+        </tr>
+      `).join('');
+    });
+  }
+
+  function getActiveModal(){
+    const all = document.querySelectorAll('#contactsModal');
+    return all.length ? all[all.length-1] : null; // use the last one if duplicates exist
+  }
+
+  function openModal(){
+    const modal = getActiveModal();
+    if(!modal) return;
+    // If form rows are empty, render them from stored data
+    const host = modal.querySelector('#contactsFormRows');
+    if(host && !host.children.length){
+      const data = loadContacts();
+      host.innerHTML = data.map(c => `
+        <div class="tc-row" data-id="${c.id}">
+          <div class="tc-name">${c.name}</div>
+          <div class="tc-field">
+            <label for="phone_${c.id}">Phone</label>
+            <input id="phone_${c.id}" inputmode="tel" pattern="[0-9+\\-() ]{3,}" value="${c.phone}">
+          </div>
+          <div class="tc-field">
+            <label for="email_${c.id}">Email</label>
+            <input id="email_${c.id}" type="text" value="${c.email}">
+          </div>
+        </div>
+      `).join('');
+    }
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden','false');
+  }
+
+  function closeModal(){
+    const modal = getActiveModal();
+    if(!modal) return;
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden','true');
+  }
+
+  function collectFromModal(){
+    const modal = getActiveModal();
+    if(!modal) return loadContacts();
+    const rows = modal.querySelectorAll('.tc-row');
+    const byId = {};
+    rows.forEach(row=>{
+      const id = row.getAttribute('data-id');
+      const phone = (row.querySelector('#phone_'+id)?.value||'').trim();
+      const email = (row.querySelector('#email_'+id)?.value||'').trim();
+      byId[id] = { id, phone, email };
+    });
+    // Merge with defaults to keep order/names stable
+    return DEFAULTS.map(d => ({ ...d, ...(byId[d.id]||{}) }));
+  }
+
+  // Relaxed email check: allow internal forms like user@hcl (no dot)
+  function looksWeirdEmail(s){ return !!s && !/.+@.+/.test(s); }
+
+  function wire(){
+    // Open buttons (card + floating)
+    document.querySelectorAll('#tc-manage, #contactsFab').forEach(btn=>{
+      btn.addEventListener('click', openModal);
+    });
+
+    // Card reset
+    document.querySelectorAll('#tc-reset').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        if(confirm('Reset contact info to default values?')){
+          saveContacts(DEFAULTS);
+          renderCard();
+        }
+      });
+    });
+
+    // Modal actions (use delegation so duplicates don’t break)
+    const modal = getActiveModal();
+    if(modal){
+      // Click outside panel closes
+      modal.addEventListener('click', (e)=>{ if(e.target.id==='contactsModal') closeModal(); });
+
+      const btnClose  = modal.querySelector('#contactsCancel');
+      const btnSave   = modal.querySelector('#contactsSave');
+      const btnReset  = modal.querySelector('#contactsReset');
+      const form      = modal.querySelector('#contactsForm');
+
+      btnClose && btnClose.addEventListener('click', closeModal);
+
+      if(form){
+        // Ensure native submit triggers our save
+        form.addEventListener('submit', (e)=>{
+          e.preventDefault();
+          const updated = collectFromModal();
+          const odd = updated.find(c => looksWeirdEmail(c.email));
+          if (odd){
+            const ok = confirm(`Email "${odd.email}" for ${odd.name} looks unusual. Save anyway?`);
+            if(!ok) return;
+          }
+          saveContacts(updated);
+          renderCard();
+          closeModal();
+        });
+      }
+
+      btnSave && btnSave.addEventListener('click', (e)=>{
+        e.preventDefault();
+        form?.dispatchEvent(new Event('submit', { cancelable:true, bubbles:true }));
+      });
+
+      btnReset && btnReset.addEventListener('click', ()=>{
+        if(confirm('Reset contact info to default values?')){
+          saveContacts(DEFAULTS);
+          renderCard();
+          // Refill the modal fields if open
+          const host = modal.querySelector('#contactsFormRows');
+          if(host){
+            const data = loadContacts();
+            host.querySelectorAll('.tc-row').forEach(row=>{
+              const id = row.getAttribute('data-id');
+              row.querySelector('#phone_'+id).value = data.find(x=>x.id===id).phone;
+              row.querySelector('#email_'+id).value = data.find(x=>x.id===id).email;
+            });
+          }
+          closeModal();
+        }
+      });
+
+      // ESC to close
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !modal.hidden) closeModal(); });
+    }
+
+    // Initial card render 
+    renderCard();
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', wire);
+  } else {
+    wire();
+  }
+})();
+</script>
+
+</body>
+</html>
