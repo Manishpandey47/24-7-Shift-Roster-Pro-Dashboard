@@ -219,6 +219,18 @@
       <div id="alerts" class="mini"></div>
     </div>
   </div>
+<div class="card" id="allowanceResourceCard" style="margin-top:12px">
+  <h3>Allowance by Resource</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:6px;border-bottom:1px solid var(--border)">Resource</th>
+        <th style="text-align:center;padding:6px;border-bottom:1px solid var(--border)">Eligible Days</th>
+      </tr>
+    </thead>
+    <tbody id="allowanceResourceBody"></tbody>
+  </table>
+</div>
 
   <div class="grid">
     <table id="tbl">
@@ -257,6 +269,17 @@
     </div>
 </div>
 
+<div id="email-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h3>Email Notification</h3>
+        <p>An email draft has been created. Click the button to open it in your email client.</p>
+        <div class="modal-buttons">
+            <button id="open-email-btn" class="modal-btn">Open Email Client</button>
+        </div>
+    </div>
+</div>
+
 <script>
 (() => {
   const errorBox = document.getElementById('errorBox');
@@ -266,13 +289,13 @@
     const CYCLE = ['N','N','N','N','N','N','O','O','E','E','E','E','E','E','O','O','M','M','M','M','M','M','O','O'];
     const state = { anchorDate:'2025-09-01', anchorResource:'Parth', anchorShift:'N', month:'2025-09', changes:{}, locks:{Parth:false,Satyam:false,Chandrachur:false,Gaurav:false}, theme:'theme-dark', autoRebal:false, palette:{M:'#1976d2',E:'#ef6c00',N:'#7b1fa2',O:'#2e7d32',GS:'#00838f',L:'#b71c1c'}, seeds:{}, manishOverrides: {} };
     
-    // Default contacts, which will now be used
+    // Default contacts
     const DEFAULTS = [
       { id:'manish',      name:'Manish',      phone:'8802914640', email:'pandey.m@hcltech.com' },
-    { id:'satyam',      name:'Satyam',      phone:'9953498875', email:'satyam_s@hcltech.com' },
-    { id:'gaurav',      name:'Gaurav',      phone:'8527665763', email:'nigam_g@hcltech.com' },
-    { id:'chandrachur', name:'Chandrachur', phone:'9350548502', email:'chandrachur.sinha@hcltech.com' },
-    { id:'parth',       name:'Parth',       phone:'9565766667', email:'pandeyp@hcltech.com' }
+      { id:'gaurav',      name:'Gaurav',      phone:'8527665763', email:'nigam_g@hcltech.com' },
+      { id:'chandrachur', name:'Chandrachur', phone:'9350548502', email:'chandrachur.sinha@hcltech.com' },
+      { id:'parth',       name:'Parth',       phone:'9565766667', email:'pandeyp@hcltech.com' },
+      { id:'satyam', name: 'Satyam', phone: '9953498875', email: 'satyam_s@hcltech.com' }
     ];
 
     const fmtDateLocal = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -323,20 +346,7 @@
     let leaveDetails = {date: null, name: null, prevShift: null};
     
     // NEW: Email modal elements
-    const emailModal = document.createElement('div');
-    emailModal.id = 'email-modal';
-    emailModal.className = 'modal';
-    emailModal.innerHTML = `
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h3>Email Notification</h3>
-            <p>An email draft has been created. Click the button to open it in your email client.</p>
-            <div class="modal-buttons">
-                <button id="open-email-btn" class="modal-btn">Open Email Client</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(emailModal);
+    const emailModal = document.getElementById('email-modal');
     const openEmailBtn = document.getElementById('open-email-btn');
 
     let currentRows=null, selectedDate=null;
@@ -363,7 +373,8 @@ This email is to notify you of a shift change.
 - Date: ${date}`;
 
     // Construct the mailto link with managers in CC and the full team in TO
-    const mailtoLink = `mailto:${teamEmails.join(',') }?cc=${managerEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoLink = `mailto:${teamEmails.join(',') }?cc=${managerEmails.join(',')}&subject=
+${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     
     openEmailBtn.onclick = () => {
         window.location.href = mailtoLink;
@@ -414,22 +425,25 @@ This email is to notify you of a shift change.
 
     function setCellShift(td, shift){ const bg=getComputedStyle(document.documentElement).getPropertyValue(`--c-${shift}-bg`).trim(); const fg=getComputedStyle(document.documentElement).getPropertyValue(`--c-${shift}-fg`).trim(); td.style.background=bg; td.style.color=fg; const sel=td.querySelector('select.shift'); if(sel){ sel.style.color=fg; sel.style.fontWeight='700'; sel.style.textShadow='0 1px 0 rgba(0,0,0,.25)'; } }
 
-    function render(rows){ rows = rows || buildBaseline(state.month); applyChanges(rows); currentRows=rows; tblBody.innerHTML=''; for(const r of rows){ const tr=document.createElement('tr'); tr.setAttribute('data-date', r.date); const tdDate=document.createElement('td'); tdDate.textContent=r.date; tdDate.style.cursor='pointer'; tdDate.onclick=()=>{ selectedDate=r.date; highlightSelected(); }; const tdDay=document.createElement('td'); tdDay.textContent=r.day; const tdGS=document.createElement('td'); tdGS.textContent='GS';
-      
-      // NEW: Check for Manish override
-      const manishOverrideShift = state.manishOverrides[r.date];
-      if (manishOverrideShift) {
-          tdGS.textContent = manishOverrideShift;
-          setCellShift(tdGS, manishOverrideShift);
-      } else {
-          tdGS.style.background='var(--c-GS-bg)';
-          tdGS.style.color='var(--c-GS-fg)';
-          tdGS.style.fontWeight='700';
-      }
-
-      tr.append(tdDate, tdDay, tdGS); for(const name of NAMES){ const td=document.createElement('td'); td.className='sel'; const sel=document.createElement('select'); sel.className='shift'; ['M','E','N','O','L'].forEach(opt=>{ const o=document.createElement('option'); o.value=opt; o.textContent=opt; sel.appendChild(o); }); sel.value=r.actual[name]; if(state.locks[name]){ sel.disabled=true; sel.title = name+' is locked'; } td.appendChild(sel); setCellShift(td, sel.value);
-      
-      sel.onchange = (e) => {
+    function render(rows){ rows = rows || buildBaseline(state.month); applyChanges(rows); currentRows=rows; tblBody.innerHTML=''; for(const r of rows){ const tr=document.createElement('tr'); tr.setAttribute('data-date', r.date); const tdDate=document.createElement('td'); tdDate.textContent=r.date; tdDate.style.cursor='pointer'; tdDate.onclick=()=>{ selectedDate=r.date; highlightSelected(); }; const tdDay=document.createElement('td'); tdDay.textContent=r.day; const tdGS = document.createElement('td');
+    
+    // NEW LOGIC TO ASSIGN MANISH WEEKEND OFF
+    let manishDefaultShift = 'GS';
+    if (r.day === 'Sat' || r.day === 'Sun') {
+        manishDefaultShift = 'O';
+    }
+    const manishOverrideShift = state.manishOverrides[r.date];
+    const manishFinalShift = manishOverrideShift || manishDefaultShift;
+    
+    tdGS.textContent = manishFinalShift;
+    setCellShift(tdGS, manishFinalShift);
+    r.actual.Manish = manishFinalShift;
+    
+    // END OF NEW LOGIC
+    
+    tr.append(tdDate, tdDay, tdGS); for(const name of NAMES){ const td=document.createElement('td'); td.className='sel'; const sel=document.createElement('select'); sel.className='shift'; ['M','E','N','O','L'].forEach(opt=>{ const o=document.createElement('option'); o.value=opt; o.textContent=opt; sel.appendChild(o); }); sel.value=r.actual[name]; if(state.locks[name]){ sel.disabled=true; sel.title = name+' is locked'; } td.appendChild(sel); setCellShift(td, sel.value);
+    
+    sel.onchange = (e) => {
         if (sel.disabled) return;
         const newShift = e.target.value;
         if (newShift === 'L') {
@@ -452,8 +466,8 @@ This email is to notify you of a shift change.
           }
           render(currentRows);
         }
-      };
-      tr.appendChild(td); } tblBody.appendChild(tr); } updateCoverage(rows); highlightSelected(); save(); refreshLockIcons(); }
+    };
+    tr.appendChild(td); } tblBody.appendChild(tr); } updateCoverage(rows); highlightSelected(); save(); refreshLockIcons(); }
 
     const highlightSelected = () => Array.from(tblBody.querySelectorAll('tr')).forEach(tr=>{ const d=tr.firstChild.textContent; tr.style.outline=(selectedDate && d===selectedDate)?'2px solid var(--accent)':'none'; });
 
@@ -476,7 +490,78 @@ This email is to notify you of a shift change.
       if(!ok){ allOk=false; bad++; dates.push(r.date);}
     } covBadge.className='badge '+(allOk?'ok':'bad'); covBadge.textContent=allOk?'Coverage OK for all days in view':`Coverage issues: ${bad} day(s)`; covNotes.textContent=allOk?'':`Dates affected: ${dates.slice(0,8).join(', ')}${dates.length>8?'…':''}`; computeAllowances(rows); computeAlerts(rows); }
 
-    function computeAllowances(rows){ const weekly={}, lines=[]; let total=0; for(const r of rows){ const wk=isoWeek(parseDate(r.date)); for(const n of NAMES){ const key=`${n}|${wk.year}|${wk.week}`; if(!weekly[key]) weekly[key]={Name:n,year:wk.year,week:wk.week,worked:0}; if(['M','E','N'].includes(r.actual[n])) weekly[key].worked++; } } Object.values(weekly).forEach(w=>{ const allow=Math.max(0,w.worked-5); total+=allow; lines.push(`${w.Name} · W${w.week} ${w.year}: ${w.worked} → Allow ${allow}`); }); allowanceKPI.textContent=total; allowanceBreakdown.innerHTML='<div class="mini">'+lines.join('<br>')+'</div>'; }
+
+
+function computeAllowances(rows){
+  const weekly = {};            // key: "Name|year|week" -> {Name, year, week, worked, allow}
+  const perResource = {};       // name -> total allowance
+  const lines = [];
+  let total = 0;
+
+  for (const r of rows) {
+    const wk = isoWeek(parseDate(r.date)); // {year, week}
+
+    // --- Team members (standard rule: allow after 5 worked days/week)
+    for (const n of NAMES) {
+      const key = `${n}|${wk.year}|${wk.week}`;
+      if (!weekly[key]) weekly[key] = { Name: n, year: wk.year, week: wk.week, worked: 0, allow: 0 };
+      if (['M','E','N'].includes(r.actual[n])) weekly[key].worked++;
+    }
+
+    // --- Manish (special weekend-cover rule)
+    const mKey = `Manish|${wk.year}|${wk.week}`;
+    if (!weekly[mKey]) weekly[mKey] = { Name: 'Manish', year: wk.year, week: wk.week, worked: 0, allow: 0 };
+
+    // Effective shift for Manish = override if present, else whatever row carries, else GS
+    const manishShift = (state.manishOverrides && state.manishOverrides[r.date])
+                        ? state.manishOverrides[r.date]
+                        : (r.actual && r.actual.Manish) ? r.actual.Manish : 'GS';
+
+    const isWeekend = (r.day === 'Sat' || r.day === 'Sun');
+    const someoneOnLeave = NAMES.some(n => r.actual[n] === 'L');
+
+    // Count one allowance day for Manish when he covers a weekend leave with a real shift
+    if (isWeekend && ['M','E','N'].includes(manishShift) && someoneOnLeave) {
+      weekly[mKey].allow += 1;
+    }
+  }
+
+  // --- Convert weekly stats to allowances
+  Object.values(weekly).forEach(w => {
+    const allowThis =
+      (w.Name === 'Manish')
+        ? w.allow                                    // special rule
+        : Math.max(0, w.worked - 5);                 // standard rule
+
+    total += allowThis;
+    if (!perResource[w.Name]) perResource[w.Name] = 0;
+    perResource[w.Name] += allowThis;
+
+    // Breakdown text
+    if (w.Name === 'Manish') {
+      lines.push(`Manish · W${w.week} ${w.year}: weekend covers ${w.allow} → Allow ${allowThis}`);
+    } else {
+      lines.push(`${w.Name} · W${w.week} ${w.year}: ${w.worked} worked → Allow ${allowThis}`);
+    }
+  });
+
+  // --- Update UI
+  allowanceKPI.textContent = total;
+  allowanceBreakdown.innerHTML = '<div class="mini">' + lines.join('<br>') + '</div>';
+
+  const body = document.getElementById('allowanceResourceBody');
+  if (body) {
+    body.innerHTML = Object.entries(perResource)
+      .map(([name, val]) =>
+        `<tr>
+           <td style="padding:6px;border-bottom:1px solid var(--border)">${name}</td>
+           <td style="text-align:center;padding:6px;border-bottom:1px solid var(--border)">${val}</td>
+         </tr>`).join('');
+  }
+}
+
+
+
 
     function computeAlerts(rows){ const msgs=[]; for(const n of NAMES){ let streak=0, prev=null; for(const r of rows){ const s=r.actual[n]; if(['M','E','N'].includes(s)){ if(s===prev) streak++; else { prev=s; streak=1; } if(streak>6){ msgs.push(`${n} exceeds 6 consecutive ${s} shifts starting ${r.date}`); break; } } else { prev=null; streak=0; } } } alerts.innerHTML=msgs.length?('<ul style="margin:0;padding-left:18px">'+msgs.map(m=>`<li>${m}</li>`).join('')+'</ul>'):'<span class="mini">No alerts</span>'; }
 
@@ -578,63 +663,63 @@ This email is to notify you of a shift change.
 })();
 </script>
 <style>
-/* New styles for the two-column layout */
-.contact-sections {
-  display: flex;
-  gap: 14px;
-  margin-top: 14px;
-}
-.contact-sections .tc-card {
-  flex: 1;
-}
+  /* New styles for the two-column layout */
+  .contact-sections {
+    display: flex;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .contact-sections .tc-card {
+    flex: 1;
+  }
 
-/* New styles for the managers section */
-.managers-card {
-  background: var(--tc-card-bg);
-  color: var(--tc-card-fg);
-  border: 1px solid var(--tc-border);
-  border-radius: 10px;
-  padding: 12px 14px;
-}
-.managers-card h3 {
-  margin: 0;
-  font-size: 1rem;
-}
-.managers-list {
-  list-style: none;
-  padding: 0;
-  margin: 10px 0 0;
-}
-.managers-list li {
-  margin-bottom: 8px;
-}
-.manager-name {
-  font-weight: 600;
-  cursor: help;
-  position: relative;
-}
-.manager-info {
-  display: none;
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  white-space: nowrap;
-  background: var(--tc-card-bg);
-  color: var(--tc-card-fg);
-  border: 1px solid var(--tc-border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  margin-bottom: 5px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-}
-.manager-name:hover .manager-info {
-  display: block;
-}
-.manager-info p {
-  margin: 0;
-  font-size: 0.85rem;
-}
+  /* New styles for the managers section */
+  .managers-card {
+    background: var(--tc-card-bg);
+    color: var(--tc-card-fg);
+    border: 1px solid var(--tc-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .managers-card h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+  .managers-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0;
+  }
+  .managers-list li {
+    margin-bottom: 8px;
+  }
+  .manager-name {
+    font-weight: 600;
+    cursor: help;
+    position: relative;
+  }
+  .manager-info {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    white-space: nowrap;
+    background: var(--tc-card-bg);
+    color: var(--tc-card-fg);
+    border: 1px solid var(--tc-border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+  }
+  .manager-name:hover .manager-info {
+    display: block;
+  }
+  .manager-info p {
+    margin: 0;
+    font-size: 0.85rem;
+  }
 </style>
 
 <div class="contact-sections">
@@ -684,17 +769,18 @@ This email is to notify you of a shift change.
   <div class="tc-panel" role="dialog" aria-modal="true" aria-labelledby="contactsTitle">
     <header class="tc-panel-head">
       <h3 id="contactsTitle">Manage EDI Team Contacts</h3>
+      <button id="tc-add" class="btn btn-secondary" type="button" title="Add a new contact">+</button>
     </header>
 
     <form id="contactsForm">
       <div class="tc-panel-body">
-        <p class="tc-hint">Click into any field to update. Changes are saved to this browser only.</p>
+        <p class="tc-hint">Click into any field to update. Changes are saved to this browser only. Use the '+' to add a new person, and 'x' to remove.</p>
         <div id="contactsFormRows" class="tc-rows"></div>
       </div>
       <footer class="tc-panel-foot">
         <button id="contactsCancel" class="btn btn-secondary" type="button">Close</button>
-        <button id="contactsSave" class="btn btn-primary" type="submit">Save</button>
         <button id="contactsReset" class="btn btn-danger" type="button" title="Restore default numbers/emails">Reset</button>
+        <button id="contactsSave" class="btn btn-primary" type="submit">Save</button>
       </footer>
     </form>
   </div>
@@ -709,7 +795,7 @@ This email is to notify you of a shift change.
     --tc-fab-text:#ffffff;
   }
   [data-theme="dark"]{
-    --tc-border:#374151; --tc-card-bg:#1f2937; --tc-card-fg:#f1f5f9;
+    --tc-border:#374151; --tc-card-bg:#1f2937; --tc-card-fg:#f1f5e9;
     --tc-input-bg:#111827; --tc-input-border:#374151;
     --tc-overlay:rgba(0,0,0,.6); --tc-primary:#3b82f6; --tc-danger:#ef4444;
   }
@@ -754,14 +840,16 @@ This email is to notify you of a shift change.
 
   /* Edit rows */
   .tc-rows{ display:grid; gap:10px; }
-  .tc-row{ display:grid; grid-template-columns: 160px 1fr 1fr; gap:12px; align-items:center; }
+  /* Corrected grid layout to match the image */
+  .tc-row{ display:grid; grid-template-columns: 1fr 1fr 1fr 30px; gap:12px; align-items:center; }
   .tc-name{ font-weight:600; }
   .tc-field{ display:flex; flex-direction:column; gap:6px; }
-  .tc-field label{ font-size:.85rem; opacity:.85; }
   .tc-field input{
     background:var(--tc-input-bg); color:inherit; border:1px solid var(--tc-input-border);
     border-radius:6px; padding:8px 10px;
   }
+  .tc-remove-btn{ cursor:pointer; font-weight:600; color:var(--tc-danger); text-align:center; }
+  .tc-add-btn{ font-weight:600; }
 
   /* Tiny toast for feedback */
   #tc-toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
@@ -776,39 +864,49 @@ This email is to notify you of a shift change.
 
 <script>
 (function () {
-  // ---- Defaults you provided ----
-  const DEFAULTS = [
-    { id:'manish',      name:'Manish',      phone:'8802914640', email:'pandey.m@hcltech.com' },
-    { id:'satyam',      name:'Satyam',      phone:'9953498875', email:'satyam_s@hcltech.com' },
-    { id:'gaurav',      name:'Gaurav',      phone:'8527665763', email:'nigam_g@hcltech.com' },
-    { id:'chandrachur', name:'Chandrachur', phone:'9350548502', email:'chandrachur.sinha@hcltech.com' },
-    { id:'parth',       name:'Parth',       phone:'9565766667', email:'pandeyp@hcltech.com' }
-  ];
+  // ---- Consolidated and Corrected Contact Management Script ----
   const KEY = 'teamContacts_v1';
-  const $ = (s, r=document)=>r.querySelector(s);
+  // Use the contact data from the provided image
+  const DEFAULTS = [
+    { id: 'manish', name: 'Manish', phone: '8802914640', email: 'pandey.m@hcltech.com' },
+    { id: 'gaurav', name: 'Gaurav', phone: '8527665763', email: 'nigam_g@hcltech.com' },
+    { id: 'chandrachur', name: 'Chandrachur', phone: '9350548502', email: 'chandrachur.sinha@hcltech.com' },
+    { id: 'parth', name: 'Parth', phone: '9565766667', email: 'pandeyp@hcltech.com' },
+    { id: 'satyam', name: 'Satyam', phone: '9953498875', email: 'satyam_s@hcltech.com' }
+  ];
+  const $ = (s, r=document) => r.querySelector(s);
+  let contacts = DEFAULTS;
 
   // localStorage with fallback (in case file:// or policy blocks writes)
-  function getStore(){
-    try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return localStorage; }
-    catch(_){ return { _mem:null, getItem(){return this._mem;}, setItem(k,v){this._mem=v;}, removeItem(){this._mem=null;} }; }
+  function getStore() {
+    try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); return localStorage; }
+    catch (_) { return { _s: null, getItem() { return this._s; }, setItem(k, v) { this._s = v; }, removeItem() { this._s = null; } }; }
   }
   const store = getStore();
 
-  function loadContacts(){
-    try{
-      const raw = store.getItem(KEY);
-      if(!raw) return DEFAULTS.slice();
-      const arr = JSON.parse(raw);
-      const byId = Object.fromEntries(arr.map(x=>[x.id,x]));
-      return DEFAULTS.map(d=>({ ...d, ...(byId[d.id]||{}) }));
-    }catch{ return DEFAULTS.slice(); }
+  function loadContacts() {
+    try {
+        const raw = store.getItem(KEY);
+        // If there's saved data, use it directly.
+        if (raw) {
+            return JSON.parse(raw);
+        }
+    } catch (e) {
+        console.error("Failed to load contacts from storage:", e);
+    }
+    // If no data is saved or there's an error, return a fresh copy of the defaults.
+    return DEFAULTS.slice();
   }
-  function saveContacts(list){ store.setItem(KEY, JSON.stringify(list)); }
 
-  function renderCard(){
+  function saveContacts(list) {
+    store.setItem(KEY, JSON.stringify(list));
+    contacts = list;
+  }
+
+  function renderCard() {
     const data = loadContacts();
     const tbody = $('#contactsTableBody');
-    if(!tbody) return;
+    if (!tbody) return;
     tbody.innerHTML = data.map(c => `
       <tr>
         <td>${c.name}</td>
@@ -818,269 +916,141 @@ This email is to notify you of a shift change.
     `).join('');
   }
 
-  function openModal(){
-    const data = loadContacts();
+  function renderModalRows() {
     const host = $('#contactsFormRows');
-    host.innerHTML = data.map(c => `
+    host.innerHTML = contacts.map(c => `
       <div class="tc-row" data-id="${c.id}">
-        <div class="tc-name">${c.name}</div>
         <div class="tc-field">
-          <label for="phone_${c.id}">Phone</label>
-          <input id="phone_${c.id}" inputmode="tel" pattern="[0-9+\\-() ]{3,}" value="${c.phone}">
+            <input id="name_${c.id}" placeholder="Name" value="${c.name}">
         </div>
         <div class="tc-field">
-          <label for="email_${c.id}">Email</label>
-          <input id="email_${c.id}" type="text" value="${c.email}">
+          <input id="phone_${c.id}" placeholder="Phone" inputmode="tel" pattern="[0-9+\\-() ]{3,}" value="${c.phone}">
         </div>
+        <div class="tc-field">
+          <input id="email_${c.id}" placeholder="Email" type="email" value="${c.email}">
+        </div>
+        <div class="tc-remove-btn" data-id="${c.id}">&#10005;</div>
       </div>
     `).join('');
+  }
+
+  function openModal() {
+    contacts = loadContacts();
+    renderModalRows();
     $('#contactsModal').hidden = false;
   }
-  function closeModal(){ $('#contactsModal').hidden = true; }
 
-  function toast(msg){
-    const el = document.createElement('div');
-    el.id='tc-toast'; el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(()=>{ el.remove(); }, 2000);
+  function closeModal() {
+    $('#contactsModal').hidden = true;
+  }
+
+  function collectFromModal() {
+    const updated = [];
+    const rows = document.querySelectorAll('.tc-row');
+    rows.forEach(row => {
+      const id = row.getAttribute('data-id');
+      const name = (row.querySelector(`#name_${id}`)?.value || '').trim();
+      const phone = (row.querySelector(`#phone_${id}`)?.value || '').trim();
+      const email = (row.querySelector(`#email_${id}`)?.value || '').trim();
+      updated.push({ id, name, phone, email });
+    });
+    return updated;
   }
 
   // Relaxed email check: allow internal formats like "user@hcl"
-  function looksWeirdEmail(s){ return !!s && !/.+@.+/.test(s); }
+  function looksWeirdEmail(s) {
+    return !!s && !/.+@.+/.test(s);
+  }
 
-  function onSave(e){
+  function onSave(e) {
     e.preventDefault();
-    const current = loadContacts();
-    const updated = current.map(c=>{
-      const phone = ($('#phone_'+c.id)?.value||'').trim();
-      const email = ($('#email_'+c.id)?.value||'').trim();
-      return { ...c, phone, email };
-    });
-
+    const updated = collectFromModal();
     const odd = updated.find(c => looksWeirdEmail(c.email));
-    if (odd){
+    if (odd) {
       const ok = confirm(`Email "${odd.email}" for ${odd.name} looks unusual. Save anyway?`);
       if (!ok) return;
     }
-
     saveContacts(updated);
     renderCard();
     closeModal();
     toast('Contacts saved');
   }
 
-  function onReset(){
-    if (confirm('Reset contact info to default values?')){
-      saveContacts(DEFAULTS);
+  function onReset() {
+    if (confirm('Reset contact info to default values?')) {
+      saveContacts(DEFAULTS.slice());
       renderCard();
-      // If modal is open, refresh its fields
-      if (!$('#contactsModal').hidden) openModal();
+      openModal(); // Force a full re-render of the modal
       toast('Contacts reset');
     }
   }
 
-  document.addEventListener('DOMContentLoaded', ()=>{
+  function onRemove(e) {
+    if (!e.target.matches('.tc-remove-btn')) return;
+    const row = e.target.closest('.tc-row');
+    const id = row.dataset.id;
+    contacts = contacts.filter(c => c.id !== id);
+    row.remove();
+    toast('Contact removed');
+  }
+  
+  function onAdd() {
+    const newId = 'new_' + Date.now();
+    const newRowHTML = `
+      <div class="tc-row" data-id="${newId}">
+        <div class="tc-field">
+          <input id="name_${newId}" placeholder="Name" value="New Contact">
+        </div>
+        <div class="tc-field">
+          <input id="phone_${newId}" placeholder="Phone" inputmode="tel" pattern="[0-9+\\-() ]{3,}" value="">
+        </div>
+        <div class="tc-field">
+          <input id="email_${newId}" placeholder="Email" type="email" value="">
+        </div>
+        <div class="tc-remove-btn" data-id="${newId}">&#10005;</div>
+      </div>
+    `;
+    const host = $('#contactsFormRows');
+    host.insertAdjacentHTML('beforeend', newRowHTML);
+  }
+
+
+  function toast(msg) {
+    const el = document.createElement('div');
+    el.id = 'tc-toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => { el.remove(); }, 2000);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
     renderCard();
-    // Buttons on the card
     $('#tc-manage')?.addEventListener('click', openModal);
     $('#tc-reset')?.addEventListener('click', onReset);
-    // Floating button
     $('#contactsFab')?.addEventListener('click', openModal);
-    // Modal actions
-    $('#contactsCancel')?.addEventListener('click', closeModal);
-    $('#contactsForm')?.addEventListener('submit', onSave);
-    $('#contactsReset')?.addEventListener('click', onReset);
-    // Click outside panel closes modal
-    $('#contactsModal')?.addEventListener('click', (e)=>{ if(e.target.id==='contactsModal') closeModal(); });
+
+    const modal = $('#contactsModal');
+    if (modal) {
+      $('#contactsCancel')?.addEventListener('click', closeModal);
+      $('#contactsForm')?.addEventListener('submit', onSave);
+      $('#contactsSave')?.addEventListener('click', onSave);
+      $('#contactsReset')?.addEventListener('click', onReset);
+      $('#tc-add')?.addEventListener('click', onAdd);
+      modal.addEventListener('click', (e) => {
+        if (e.target.id === 'contactsModal') closeModal();
+        onRemove(e);
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+    }
   });
 })();
 </script>
 <style>
   /* Force the modal to truly hide when [hidden] is set, even if other CSS fights it */
-  .tc-modal[hidden]{ display:none !important; }
+  .tc-modal[hidden] {
+    display: none !important;
+  }
 </style>
-
-<script>
-/* Team Contacts — resilient hotfix */
-(function(){
-  const KEY = 'teamContacts_v1';
-  const DEFAULTS = [
-    { id:'manish',      name:'Manish',      phone:'8802914640', email:'pandey.m@hcltech.com' },
-    { id:'satyam',      name:'Satyam',      phone:'9953498875', email:'satyam_s@hcltech.com' },
-    { id:'gaurav',      name:'Gaurav',      phone:'8527665763', email:'nigam_g@hcltech.com' },
-    { id:'chandrachur', name:'Chandrachur', phone:'9350548502', email:'chandrachur.sinha@hcltech.com' },
-    { id:'parth',       name:'Parth',       phone:'9565766667', email:'pandeyp@hcltech.com' }
-  ];
-
-  // Storage with fallback (file:// or policy can block localStorage)
-  function getStore(){
-    try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return localStorage; }
-    catch(_){ return { _s:null, getItem(){return this._s;}, setItem(k,v){this._s=v;}, removeItem(){this._s=null;} }; }
-  }
-  const store = getStore();
-
-  function loadContacts(){
-    try{
-      const raw = store.getItem(KEY);
-      if(!raw) return DEFAULTS.slice();
-      const arr = JSON.parse(raw);
-      const byId = Object.fromEntries(arr.map(x=>[x.id,x]));
-      return DEFAULTS.map(d => ({ ...d, ...(byId[d.id]||{}) }));
-    }catch{ return DEFAULTS.slice(); }
-  }
-  function saveContacts(list){ store.setItem(KEY, JSON.stringify(list)); }
-
-  function renderCard(){
-    const data = loadContacts();
-    document.querySelectorAll('#contactsTableBody').forEach(tbody=>{
-      tbody.innerHTML = data.map(c=>`
-        <tr>
-          <td>${c.name}</td>
-          <td><a class="mono" href="tel:${c.phone}">${c.phone}</a></td>
-          <td><a href="mailto:${c.email}">${c.email}</a></td>
-        </tr>
-      `).join('');
-    });
-  }
-
-  function getActiveModal(){
-    const all = document.querySelectorAll('#contactsModal');
-    return all.length ? all[all.length-1] : null; // use the last one if duplicates exist
-  }
-
-  function openModal(){
-    const modal = getActiveModal();
-    if(!modal) return;
-    // If form rows are empty, render them from stored data
-    const host = modal.querySelector('#contactsFormRows');
-    if(host && !host.children.length){
-      const data = loadContacts();
-      host.innerHTML = data.map(c => `
-        <div class="tc-row" data-id="${c.id}">
-          <div class="tc-name">${c.name}</div>
-          <div class="tc-field">
-            <label for="phone_${c.id}">Phone</label>
-            <input id="phone_${c.id}" inputmode="tel" pattern="[0-9+\\-() ]{3,}" value="${c.phone}">
-          </div>
-          <div class="tc-field">
-            <label for="email_${c.id}">Email</label>
-            <input id="email_${c.id}" type="text" value="${c.email}">
-          </div>
-        </div>
-      `).join('');
-    }
-    modal.hidden = false;
-    modal.setAttribute('aria-hidden','false');
-  }
-
-  function closeModal(){
-    const modal = getActiveModal();
-    if(!modal) return;
-    modal.hidden = true;
-    modal.setAttribute('aria-hidden','true');
-  }
-
-  function collectFromModal(){
-    const modal = getActiveModal();
-    if(!modal) return loadContacts();
-    const rows = modal.querySelectorAll('.tc-row');
-    const byId = {};
-    rows.forEach(row=>{
-      const id = row.getAttribute('data-id');
-      const phone = (row.querySelector('#phone_'+id)?.value||'').trim();
-      const email = (row.querySelector('#email_'+id)?.value||'').trim();
-      byId[id] = { id, phone, email };
-    });
-    // Merge with defaults to keep order/names stable
-    return DEFAULTS.map(d => ({ ...d, ...(byId[d.id]||{}) }));
-  }
-
-  // Relaxed email check: allow internal forms like user@hcl (no dot)
-  function looksWeirdEmail(s){ return !!s && !/.+@.+/.test(s); }
-
-  function wire(){
-    // Open buttons (card + floating)
-    document.querySelectorAll('#tc-manage, #contactsFab').forEach(btn=>{
-      btn.addEventListener('click', openModal);
-    });
-
-    // Card reset
-    document.querySelectorAll('#tc-reset').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        if(confirm('Reset contact info to default values?')){
-          saveContacts(DEFAULTS);
-          renderCard();
-        }
-      });
-    });
-
-    // Modal actions (use delegation so duplicates don’t break)
-    const modal = getActiveModal();
-    if(modal){
-      // Click outside panel closes
-      modal.addEventListener('click', (e)=>{ if(e.target.id==='contactsModal') closeModal(); });
-
-      const btnClose  = modal.querySelector('#contactsCancel');
-      const btnSave   = modal.querySelector('#contactsSave');
-      const btnReset  = modal.querySelector('#contactsReset');
-      const form      = modal.querySelector('#contactsForm');
-
-      btnClose && btnClose.addEventListener('click', closeModal);
-
-      if(form){
-        // Ensure native submit triggers our save
-        form.addEventListener('submit', (e)=>{
-          e.preventDefault();
-          const updated = collectFromModal();
-          const odd = updated.find(c => looksWeirdEmail(c.email));
-          if (odd){
-            const ok = confirm(`Email "${odd.email}" for ${odd.name} looks unusual. Save anyway?`);
-            if(!ok) return;
-          }
-          saveContacts(updated);
-          renderCard();
-          closeModal();
-        });
-      }
-
-      btnSave && btnSave.addEventListener('click', (e)=>{
-        e.preventDefault();
-        form?.dispatchEvent(new Event('submit', { cancelable:true, bubbles:true }));
-      });
-
-      btnReset && btnReset.addEventListener('click', ()=>{
-        if(confirm('Reset contact info to default values?')){
-          saveContacts(DEFAULTS);
-          renderCard();
-          // Refill the modal fields if open
-          const host = modal.querySelector('#contactsFormRows');
-          if(host){
-            const data = loadContacts();
-            host.querySelectorAll('.tc-row').forEach(row=>{
-              const id = row.getAttribute('data-id');
-              row.querySelector('#phone_'+id).value = data.find(x=>x.id===id).phone;
-              row.querySelector('#email_'+id).value = data.find(x=>x.id===id).email;
-            });
-          }
-          closeModal();
-        }
-      });
-
-      // ESC to close
-      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !modal.hidden) closeModal(); });
-    }
-
-    // Initial card render 
-    renderCard();
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', wire);
-  } else {
-    wire();
-  }
-})();
-</script>
 
 </body>
 </html>
